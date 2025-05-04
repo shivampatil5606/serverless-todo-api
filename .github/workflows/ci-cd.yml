@@ -1,0 +1,37 @@
+name: Deploy To-Do API
+
+on:
+  push:
+    paths:
+      - 'lambda_fn/**'
+      - 'terraform/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # 1) Package Lambda
+      - name: Build Lambda
+        run: |
+          mkdir -p build
+          cd lambda_fn
+          zip -r ../build/todo.zip todo_handler.py
+          cd ..
+
+      # 2) Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init & Apply
+        env:
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}
+        run: |
+          cd terraform/envs/dev
+          terraform validate
+          terraform fmt -check
+          terraform init
+          terraform apply -auto-approve
