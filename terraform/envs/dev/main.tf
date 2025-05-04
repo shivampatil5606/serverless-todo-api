@@ -4,10 +4,10 @@ module "dynamodb" {
 }
 
 module "lambda" {
-  source         = "../../modules/lambda"
-  env            = var.environment
-  zip_path       = "../../../build/todo.zip"
-  dynamodb_table = module.dynamodb.table_name
+  source             = "../../modules/lambda"
+  env                = var.environment
+  zip_path           = "../../../build/todo.zip"
+  dynamodb_table     = module.dynamodb.table_name
   dynamodb_table_arn = module.dynamodb.table_arn
 }
 

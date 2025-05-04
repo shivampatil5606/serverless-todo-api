@@ -5,6 +5,7 @@ on:
     paths:
       - 'lambda_fn/**'
       - 'terraform/**'
+      - '.github/workflows/ci-cd.yml'
 
 jobs:
   build-and-deploy:
@@ -31,7 +32,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}
         run: |
           cd terraform/envs/dev
-          terraform validate
           terraform fmt -check
           terraform init
+          terraform validate
           terraform apply -auto-approve
