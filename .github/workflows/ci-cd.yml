@@ -19,28 +19,34 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id:   ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id:   ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
           aws-region:          ${{ env.AWS_REGION }}
 
-      - name: Terraform Init
+      - name: Build Lambda artifact
+        working-directory: lambda_fn
         run: |
-          cd terraform/envs/dev
-          terraform init
+          mkdir -p ../build
+          zip -r ../build/todo.zip todo_handler.py
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        working-directory: terraform/envs/dev
+        run: terraform init
 
       - name: Terraform Validate & Fmt
+        working-directory: terraform/envs/dev
         run: |
-          cd terraform/envs/dev
           terraform fmt -check
           terraform validate
 
       - name: Terraform Plan
-        run: |
-          cd terraform/envs/dev
-          terraform plan -out tfplan
+        working-directory: terraform/envs/dev
+        run: terraform plan -out tfplan
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: |
-          cd terraform/envs/dev
-          terraform apply -auto-approve tfplan
+        working-directory: terraform/envs/dev
+        run: terraform apply -auto-approve tfplan
