@@ -1,7 +1,12 @@
 # Serverless To-Do CRUD API
-- A simple REST API with endpoints to Create, Read, Update, and Delete “To-Do” items.
-- Entirely serverless: we use API Gateway for the HTTP interface, AWS Lambda for business logic, DynamoDB for persistence.
-- Infrastructure is spun up (and maintained) by Terraform, and for every code change we have a GitHub Actions pipeline that lint-validates our Terraform, applies any infra delta, zips and deploys Lambda code.
+A simple REST API with endpoints to Create, Read, Update, and Delete “To-Do” items.
+
+We use:
+- **API Gateway** (REST API) for the HTTP interface
+- **AWS Lambda** for business logic (Python 3.9)
+- **DynamoDB** (Pay-per-request) for persistence
+- **Terraform** for IaC, with a remote S3/DynamoDB backend for shared state
+- **GitHub Actions** for CI/CD.
 
 ### Why This Architecture?
 - Zero servers to patch or scale: AWS handles the Lambda containers and DynamoDB storage for you.
@@ -28,6 +33,10 @@
     - A single table called dev-todos (or prod-todos in prod) with a simple hash key id (string).
     - Billing mode: PAY_PER_REQUEST so you don’t worry about capacity.
     - Auto-scales, highly available, and super low latency for reads/writes.
+
+4. #### Terraform Remote State
+    - State file stored in S3 (encrypted + versioned).
+    - DynamoDB table for state locking.
 
 4. #### CI/CD with GitHub Actions
     - On every push to main, the workflow:
@@ -65,6 +74,12 @@ git push origin main
 
 4. #### Bootstrapping with Terraform Locally
 ```bash
+# Build Lambda ZIP
+mkdir -p build
+cd lambda_fn
+zip -r ../build/todo.zip todo_handler.py
+cd ..
+# Terraform init and apply
 cd terraform/envs/dev
 terraform init
 terraform apply -auto-approve

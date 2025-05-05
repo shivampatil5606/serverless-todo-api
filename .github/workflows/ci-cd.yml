@@ -10,29 +10,37 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+
     steps:
       - uses: actions/checkout@v3
 
-      # 1) Package Lambda
-      - name: Build Lambda
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id:   ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:          ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
         run: |
-          mkdir -p build
-          cd lambda_fn
-          zip -r ../build/todo.zip todo_handler.py
-          cd ..
+          cd terraform/envs/dev
+          terraform init
 
-      # 2) Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-
-      - name: Terraform Init & Apply
-        env:
-          AWS_REGION: us-east-1
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}
+      - name: Terraform Validate & Fmt
         run: |
           cd terraform/envs/dev
           terraform fmt -check
-          terraform init
           terraform validate
-          terraform apply -auto-approve
+
+      - name: Terraform Plan
+        run: |
+          cd terraform/envs/dev
+          terraform plan -out tfplan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd terraform/envs/dev
+          terraform apply -auto-approve tfplan
